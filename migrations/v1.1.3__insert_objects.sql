@@ -1,3 +1,3 @@
 USE SCHEMA NOM;
 INSERT INTO HELLO_WORLD
-VALUES('joy','lord',4145);
+VALUES('joy','lord',45);
