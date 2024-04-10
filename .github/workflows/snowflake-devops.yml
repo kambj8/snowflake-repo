@@ -1,0 +1,91 @@
+name: snowflake-devops-demo
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - qa	
+    paths:
+      - 'migrations/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # Stage 1: Deploy to DEV environment
+  deploy-to-dev:
+    runs-on: ubuntu-latest
+    if: github.event.name == 'push'  # Only run on push events (optional, can be removed)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Use Python 3.8.x
+        uses: actions/setup-python@v2.2.1
+        with:
+          python-version: 3.8.x
+
+      - name: Run schemachange on DEV
+        env:
+          SF_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          SF_ROLE: ${{ secrets.SF_USERNAME }}
+          SF_DATABASE: ${{ secrets.SF_USERNAME }}
+          SF_WAREHOUSE: ${{ secrets.SF_USERNAME }}
+          # ... other environment variables for DEV ...
+          SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+        run: |
+          echo "Deploying to DEV environment"
+          # ... rest of the script using DEV environment variables ...
+
+  # Stage 2: Deploy to QA environment (after successful DEV deployment)
+  deploy-to-qa:
+    runs-on: ubuntu-latest
+    needs: deploy-to-dev  # This job depends on the successful completion of the deploy-to-dev job
+    if: github.event.name == 'push'  # Only run on push events (optional, can be removed)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Use Python 3.8.x
+        uses: actions/setup-python@v2.2.1
+        with:
+          python-version: 3.8.x
+
+      - name: Run schemachange on QA
+        env:
+          SF_ACCOUNT: ${{ secrets.SF_ACCOUNT_QA }}
+          SF_USERNAME: ${{ secrets.SF_USERNAME_QA }}
+          # ... other environment variables for QA ...
+          SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+        run: |
+          echo "Deploying to QA environment"
+          # ... rest of the script using QA environment variables ...
+
+  # Stage 3: Deploy to PROD environment (after successful QA deployment)
+  deploy-to-prod:
+    runs-on: ubuntu-latest
+    needs: deploy-to-qa  # This job depends on the successful completion of the deploy-to-qa job
+    if: github.event.name == 'push'  # Only run on push events (optional, can be removed)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Use Python 3.8.x
+        uses: actions/setup-python@v2.2.1
+        with:
+          python-version: 3.8.x
+
+      - name: Run schemachange on PROD (with additional approvals?)
+        env:
+          SF_ACCOUNT: ${{ secrets.SF_PASSWORD_PROD }}  # Consider additional security measures for PROD credentials
+          SF_USERNAME: ${{ secrets.SF_USERNAME_PROD }}
+          # ... other environment variables for PROD ...
+          SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD_PROD }}
+        run: |
+          echo "Deploying to PROD environment (consider adding manual approvals here)"
+          # ... rest of the script using PROD environment variables ...
